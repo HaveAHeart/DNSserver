@@ -1,23 +1,49 @@
 package models
 
 import DOT_CHARACTER
-import SPACE_CHARACTER
 import models.Header.Companion.getHeaderFromByteArray
 import models.Question.Companion.getQuestionFromByteArray
 import java.io.ByteArrayOutputStream
 import java.io.DataOutputStream
 import java.nio.ByteBuffer
 
-class DNSMessage(val header: Header, val question: Question, val resList: MutableList<Resource>) {
+class DNSMessage(var header: Header, var question: Question, var resList: MutableList<Resource>) {
 
     companion object {
         fun parseByteArray(inData: ByteArray) : DNSMessage {
 
-            val header = getHeaderFromByteArray(inData.copyOfRange(0, 12))
+            val header = getHeaderFromByteArray(inData)
             val question = getQuestionFromByteArray(inData)
             //TODO(parseResources)
+            val resList = mutableListOf<Resource>()
+            return DNSMessage(header, question, resList)
+        }
 
-            return DNSMessage(header, question, mutableListOf())
+        fun nameToBytes(inName: String): ByteArray {
+            //my.domain.at.com -> my domain at com -> 2 M Y 6 D O M A I N 2 A T 3 C O M 0
+            val parsedDomain = inName.split(DOT_CHARACTER)
+            val qName = ByteArray(inName.length + 2)
+            var byteIter = 0
+            for (subDomain in parsedDomain) {
+                qName[byteIter] = subDomain.length.toByte()
+                byteIter++
+                for (letter in subDomain) {
+                    qName[byteIter] = letter.toByte() //TODO encodings?
+                    byteIter++
+                }
+            }
+            qName[byteIter] = 0
+            return qName
+        }
+
+        fun parseName(initPointer: Int) {
+            //TODO - parse name with  pointers
+        }
+
+        fun shortToByteArray(inShort: Short): ByteArray {
+            val buffer = ByteBuffer.allocate(2)
+            buffer.putShort(inShort)
+            return buffer.array()
         }
     }
 
@@ -27,37 +53,32 @@ class DNSMessage(val header: Header, val question: Question, val resList: Mutabl
 
         dos.writeShort(header.id.toInt())
 
-        //flags stuff - omg I have lack of straight bit access in java\kotlin >:C
-        val flags = header.flags.toShort()
+        val flags = header.flags.toUShort()
         dos.writeShort(flags.toInt())
 
         dos.writeShort(header.qdcount.toInt())
         dos.writeShort(header.ancount.toInt())
         dos.writeShort(header.nscount.toInt())
         dos.writeShort(header.arcount.toInt())
-        println("-------------------")
-        dos.write(Question.qNameToBytes(question.qname))
-        println(question.qname)
+        dos.write(nameToBytes(question.qname))
         dos.writeShort(question.qtype.toInt())
-        println(question.qtype.toInt())
         dos.writeShort(question.qclass.toInt())
-        println(question.qclass.toInt())
-        println("-------------------")
-        for (i in resList) {
-            //TODO
+        for (resource in resList) {
+            dos.write(nameToBytes(resource.name))
+            dos.writeShort(resource.type.toInt())
+            dos.writeShort(resource.rclass.toInt())
+            dos.write(resource.ttl)
+            dos.writeShort(resource.rdlength.toInt())
+            dos.write(Resource().rDataToByteArray(resource.type, resource.rdata, resource.rdlength))
         }
-        println(header.id.toString(radix = 2))
-        println(header.qdcount.toString(radix = 2))
-        println(header.ancount.toString(radix = 2))
-        println(header.nscount.toString(radix = 2))
-        println(header.arcount.toString(radix = 2))
 
-        for (i in baos.toByteArray()) println(i.toString(radix = 2))
         return baos.toByteArray()
     }
 
     override fun toString(): String {
         return "DNSMessage(header=$header\nquestion=$question\nresList=$resList)"
     }
+
+
 
 }
