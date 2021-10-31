@@ -1,6 +1,3 @@
-
-
-
 fun main(args: Array<String>) {
     when (args[0]) {
         "-s" -> {
@@ -11,6 +8,5 @@ fun main(args: Array<String>) {
             val client = Client()
             client.run()
         }
-
     }
 }
