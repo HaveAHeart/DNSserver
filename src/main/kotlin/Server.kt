@@ -1,4 +1,5 @@
 import models.DNSMessage
+import models.Flags
 import models.Resource
 import java.io.File
 import java.net.DatagramPacket
@@ -16,7 +17,7 @@ class Server {
             val retAddress = packet.address
             val retPort = packet.port
             val dnsMsg = DNSMessage.parseByteArray(packet.data)
-
+            dnsMsg.header.flags.qr = true //doing an answer
             val type = dnsMsg.question.qtype
             val qName = dnsMsg.question.qname
 
@@ -31,7 +32,7 @@ class Server {
                 Type.AAAA.code -> {res = getInfo(qName, "src/main/NameLists/AAAA.txt")}
                 else -> {/*package substitution*/}
             }
-
+            println(res.toString()) //TODO filepath in getinfo
             if (res.isEmpty()) {
                 errorFunc(dnsMsg, 3)
                 isCorrect = false
@@ -44,32 +45,20 @@ class Server {
                 val clazz = dnsMsg.question.qclass
                 val ttl = 60
                 for (resource in res) {
-                    var rData: String //TODO(data(type: Type))
-                    var rdLength: Int
-                    when {
-                        rType.toInt() == Type.A.code -> {
-                            rdLength = Type.A.size
-                            //rData = TODO(data(type = A))
-                        }
-                        rType.toInt() == Type.MX.code -> {
-                            rdLength = resource.length + 2
-                            //rData = TODO(data(type = MX))
-                        }
-                        rType.toInt() == Type.AAAA.code -> {
-                            rdLength = Type.AAAA.size
-                            //rData = TODO(data(type = AAAA))
-                        }
-                        else -> {
-                            rdLength = resource.length
-                            //rData = TODO(data(type = TXT))
-                        }
+                    val rdLength: Int = when(rType.toInt()) {
+                        Type.A.code -> { Type.A.size }
+                        Type.MX.code -> { (resource.split(":").last()).length + 2 }
+                        Type.AAAA.code -> { Type.AAAA.size }
+                        else -> { resource.length }
                     }
-                    resources.add(Resource(name, rType, clazz, ttl, rdLength.toShort(), rData))
+                    resources.add(Resource(name, rType, clazz, ttl, rdLength.toShort(), resource))
                 }
             }
-
-            val text = "HELLO THERE".toByteArray()
-            val response = DatagramPacket(text, text.size, retAddress, retPort)
+            dnsMsg.resList = resources
+            println(dnsMsg.toString())
+            dnsMsg.header.flags.toBinString()
+            val sentData = dnsMsg.toByteArray()
+            val response = DatagramPacket(sentData, sentData.size, retAddress, retPort)
             socket.send(response)
 
         }
@@ -79,7 +68,8 @@ class Server {
         val file = File(filePath)
         val res = mutableListOf<String>()
         for (line in file.readLines()) {
-            val address = line.split(SPACE_CHARACTER.toRegex(), 1)
+            println("$line ----- $field")
+            val address = line.split(SPACE_CHARACTER.toRegex())
             if (address[0] == field) {
                 res.add(address[1])
             }
@@ -103,7 +93,6 @@ class Server {
     }
 
     private fun errorFunc(dnsMsg: DNSMessage, rCode: Int) {
-        dnsMsg.header.flags.qr = true
         dnsMsg.header.flags.rcode = rCode.toShort()
     }
 }

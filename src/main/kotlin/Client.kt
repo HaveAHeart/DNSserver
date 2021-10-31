@@ -61,11 +61,12 @@ class Client {
         val packet = DatagramPacket(sendData, sendData.size, addr.address, addr.port)
         socket.send(packet)
 
+        val receiveBuf = ByteArray(512)
+        val response = DatagramPacket(receiveBuf, receiveBuf.size)
+        socket.receive(response)
 
-        //val response = DatagramPacket(receiveBuf, receiveBuf.size)
-        //socket.receive(response)
-
-        //val data = response.data
-        //for (i in data) { println(i) }
+        val data = response.data
+        val retDNSMessage = DNSMessage.parseByteArray(data)
+        println(retDNSMessage.toString())
     }
 }

@@ -33,22 +33,7 @@ data class Question(var qname: String = "",
         private fun byteSubsequence(array: ByteArray, start: Int, end : Int) =
             ByteBuffer.wrap(array.copyOfRange(start, end))
 
-        fun qNameToBytes(inName: String): ByteArray {
-            //my.domain.at.com -> my domain at com -> 2 M Y 6 D O M A I N 2 A T 3 C O M 0
-            val parsedDomain = inName.split(DOT_CHARACTER)
-            val qName = ByteArray(inName.length + 2)
-            var byteIter = 0
-            for (subDomain in parsedDomain) {
-                qName[byteIter] = subDomain.length.toByte()
-                byteIter++
-                for (letter in subDomain) {
-                    qName[byteIter] = letter.toByte() //TODO encodings?
-                    byteIter++
-                }
-            }
-            qName[byteIter] = 0
-            return qName
-        }
+
     }
 }
 
