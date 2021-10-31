@@ -1,34 +1,34 @@
 package models
 
+import DOT_CHARACTER
+import SPACE_CHARACTER
+import models.Header.Companion.getHeaderFromByteArray
+import models.Question.Companion.getQuestionFromByteArray
 import java.io.ByteArrayOutputStream
 import java.io.DataOutputStream
-import java.lang.reflect.Field
 import java.nio.ByteBuffer
-import java.nio.ByteOrder
 
 class DNSMessage(val header: Header, val question: Question, val resList: MutableList<Resource>) {
-    fun parseByteArray(inData: ByteArray) {
-        //TODO
+
+    companion object {
+        fun parseByteArray(inData: ByteArray) : DNSMessage {
+
+            val header = getHeaderFromByteArray(inData.copyOfRange(0, 12))
+            val question = getQuestionFromByteArray(inData)
+            //TODO(parseResources)
+
+            return DNSMessage(header, question, mutableListOf())
+        }
     }
 
     fun toByteArray(): ByteArray {
-        val result = ByteArray(512)
         val baos = ByteArrayOutputStream()
         val dos = DataOutputStream(baos)
 
         dos.writeShort(header.id.toInt())
 
         //flags stuff - omg I have lack of straight bit access in java\kotlin >:C
-        val flagsStr =
-                    getBitFromBool(header.qr) +
-                    getBitsFromShort(header.opcode) +
-                    getBitFromBool(header.aa) +
-                    getBitFromBool(header.tc) +
-                    getBitFromBool(header.rd) +
-                    getBitFromBool(header.ra) +
-                    "000" + //z here - always 0
-                    getBitsFromShort(header.rcode)
-        val flags = flagsStr.toShort(radix = 2)
+        val flags = header.flags.toShort()
         dos.writeShort(flags.toInt())
 
         dos.writeShort(header.qdcount.toInt())
@@ -36,7 +36,7 @@ class DNSMessage(val header: Header, val question: Question, val resList: Mutabl
         dos.writeShort(header.nscount.toInt())
         dos.writeShort(header.arcount.toInt())
         println("-------------------")
-        dos.write(question.qname)
+        dos.write(Question.qNameToBytes(question.qname))
         println(question.qname)
         dos.writeShort(question.qtype.toInt())
         println(question.qtype.toInt())
@@ -47,7 +47,6 @@ class DNSMessage(val header: Header, val question: Question, val resList: Mutabl
             //TODO
         }
         println(header.id.toString(radix = 2))
-        println(flagsStr)
         println(header.qdcount.toString(radix = 2))
         println(header.ancount.toString(radix = 2))
         println(header.nscount.toString(radix = 2))
@@ -57,16 +56,8 @@ class DNSMessage(val header: Header, val question: Question, val resList: Mutabl
         return baos.toByteArray()
     }
 
-    private fun getBitFromBool(inBool: Boolean): Char = if (inBool) '1' else '0'
-    private fun getBitsFromShort(inShort: Short): String {
-        return when (inShort.toInt()) {
-            0 -> "0000"
-            1 -> "0001"
-            2 -> "0010"
-            3 -> "0011"
-            4 -> "0100"
-            5 -> "0101"
-            else -> "1111" //both rcode and opcode can not be more than 5
-        }
+    override fun toString(): String {
+        return "DNSMessage(header=$header\nquestion=$question\nresList=$resList)"
     }
+
 }
