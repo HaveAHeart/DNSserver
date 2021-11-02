@@ -1,19 +1,17 @@
 package models
 
 import DOT_CHARACTER
-import java.nio.ByteBuffer
+import HEADER_SIZE
+import byteSubsequence
 
-data class Question(var qname: String = "",
-                    var qtype: Short = 0,
-                    var qclass: Short = 0) {
-    override fun toString(): String {
-        return "Question(qname='$qname', qtype=$qtype, qclass=$qclass)"
-    }
-
+data class Question(var qname: String,
+                    var qtype: RecordType,
+                    var qclass: Short) {
     companion object {
         fun getQuestionFromByteArray(question: ByteArray) : Question {
-            var qName = ""
-            var i = 12
+            if (question.size - HEADER_SIZE < 6) throw TODO()
+            var qName = String()
+            var i = HEADER_SIZE
             var readAmount = question[i].toInt()
             i++
             while (readAmount != 0) {
@@ -27,13 +25,8 @@ data class Question(var qname: String = "",
             }
             val qType = byteSubsequence(question, i, i + 2).short
             val qClass = byteSubsequence(question, i + 2, i + 4).short
-            return Question(qName, qType, qClass)
+            return Question(qName, RecordType.of(qType), qClass)
         }
-
-        private fun byteSubsequence(array: ByteArray, start: Int, end : Int) =
-            ByteBuffer.wrap(array.copyOfRange(start, end))
-
-
     }
 }
 
