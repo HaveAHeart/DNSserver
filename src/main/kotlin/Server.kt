@@ -1,35 +1,44 @@
 import models.DNSMessage
-import models.ResponseCode
 import models.RecordType
 import models.Resource
+import models.ResponseCode
 import java.io.File
 import java.net.DatagramPacket
 import java.net.DatagramSocket
+import java.net.SocketException
+import kotlin.system.exitProcess
 
 class Server {
     fun run() {
-        val socket = DatagramSocket(5000)
         val receiveBuf = ByteArray(512)
         val packet = DatagramPacket(receiveBuf, receiveBuf.size)
-
+        val port = 53
+        val socket: DatagramSocket
+        try {
+            socket = DatagramSocket(port)
+        } catch (e: SocketException) {
+            println("Can not open the socket at chosen port ($port)")
+            exitProcess(1)
+        }
         while (true) {
-            println("waiting")
+            println("waiting...")
             socket.receive(packet)
+            println("msg received!")
             val retAddress = packet.address
             val retPort = packet.port
             val dnsMsg = DNSMessage.parseByteArray(packet.data)
-            dnsMsg.header.flags.qr = true //doing an answer
+            dnsMsg.header.flags.qr = true //sending an answer
             val type = dnsMsg.question.qtype
             val qName = dnsMsg.question.qname
 
             var isCorrect = checkHeader(dnsMsg)
 
             val res: List<String> = when (type) {
-                is RecordType.A -> getInfo(qName, "src/main/NameLists/models.A.txt")
-                is RecordType.MX -> getInfo(qName, "src/main/NameLists/models.MX.txt")
-                is RecordType.TXT -> getInfo(qName, "src/main/NameLists/models.TXT.txt")
-                is RecordType.AAAA -> getInfo(qName, "src/main/NameLists/models.AAAA.txt")
-                is RecordType.NotImpl -> { listOf()}
+                is RecordType.A -> getInfo(qName, "src/main/NameLists/A.txt")
+                is RecordType.MX -> getInfo(qName, "src/main/NameLists/MX.txt")
+                is RecordType.TXT -> getInfo(qName, "src/main/NameLists/TXT.txt")
+                is RecordType.AAAA -> getInfo(qName, "src/main/NameLists/AAAA.txt")
+                is RecordType.NotImpl -> { listOf() }
             }
 
             if (res.isEmpty()) {
@@ -38,6 +47,7 @@ class Server {
             }
             val resources = mutableListOf<Resource>()
             if (isCorrect) {
+                dnsMsg.header.ancount = res.size.toShort() //TODO arcount
                 val name = dnsMsg.question.qname
                 val rType = dnsMsg.question.qtype
                 val clazz = dnsMsg.question.qclass
@@ -57,6 +67,8 @@ class Server {
             val sentData = dnsMsg.toByteArray()
             val response = DatagramPacket(sentData, sentData.size, retAddress, retPort)
             socket.send(response)
+
+            println("msg sent!")
         }
     }
 

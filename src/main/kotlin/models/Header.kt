@@ -12,7 +12,7 @@ data class Header(var id: Short = 0,
     companion object {
         fun getHeaderFromByteArray(headerBytes: ByteArray) : Header {
             if (headerBytes.size < 12) {
-                throw TODO()
+                throw IllegalArgumentException()
             }
             val id = byteSubsequence(headerBytes, 0, 2).short
             val flags = Flags.ushortToFlags(byteSubsequence(headerBytes, 2, 4).short.toUShort())

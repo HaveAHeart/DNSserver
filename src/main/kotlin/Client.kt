@@ -1,13 +1,12 @@
-import exceptions.NotImplTypeException
-import java.net.*
-import kotlin.random.Random
 import models.DNSMessage
 import models.Header
 import models.Question
 import models.RecordType
-import java.lang.NumberFormatException
-import java.nio.charset.Charset
+import java.net.DatagramPacket
+import java.net.DatagramSocket
+import java.net.InetSocketAddress
 import java.util.*
+import kotlin.random.Random
 import kotlin.system.exitProcess
 
 class Client {
@@ -28,29 +27,35 @@ class Client {
 
         println("Enter the domain name you wanna find info about")
         val domainName = scanner.nextLine()
-        //TODO(Validate domainName)
 
         println("Enter the ip address of the dns server you wanna connect to")
         val ipText = scanner.nextLine()
-        //TODO(Validate dnsServer ip address)
 
         println("Enter the port of dns server or leave empty for default (53)")
-        val portText = scanner.nextLine()
-        if (ipText.isBlank() || portText.isBlank() || domainName.isBlank()) {
+        var portText = scanner.nextLine()
+        if (portText.isBlank()) portText = "53"
+        if (ipText.isBlank() || domainName.isBlank()) {
             println("One of the field was empty.")
             exitProcess(1)
         }
 
         val port = try { portText.toInt() }
         catch (ex: NumberFormatException) {
-            println("idiot")
+            println("enter the correct port next time")
             exitProcess(1)
         }
         send(ipText, port, domainName, type)
     }
 
     private fun send(ipText: String, port: Int, domainName: String, type: RecordType) {
-        val addr = InetSocketAddress(ipText, port) //TODO try catch for ip exceptions
+        val addr: InetSocketAddress
+        try {
+            addr = InetSocketAddress(ipText, port)
+        } catch (e: IllegalArgumentException) {
+            println("IP/port combination is incorrect ($ipText:$port)")
+            exitProcess(1)
+        }
+
         val reqId = Random.nextInt(Short.MAX_VALUE + 1).toShort()
 
         val header = Header(id = reqId)
@@ -70,7 +75,9 @@ class Client {
 
             val data = response.data
             val retDNSMessage = DNSMessage.parseByteArray(data)
-            println(retDNSMessage.toString())
+            for (res in retDNSMessage.resList) {
+                println("${res.name} : ${res.rdata}")
+            }
         }
     }
 }
