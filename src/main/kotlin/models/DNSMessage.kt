@@ -14,6 +14,7 @@ class DNSMessage(var header: Header, var question: Question, var resList: List<R
             val question = getQuestionFromByteArray(inData)
             val resources = getResourcesFromByteArray(inData)
 
+
             return DNSMessage(header, question, resources)
         }
 
