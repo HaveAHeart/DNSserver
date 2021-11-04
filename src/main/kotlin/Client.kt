@@ -3,7 +3,6 @@ import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.InetSocketAddress
 import java.util.*
-import kotlin.random.Random
 import kotlin.system.exitProcess
 
 class Client {
@@ -23,23 +22,22 @@ class Client {
         }
 
         println("Enter the domain name you wanna find info about")
-        val domainName = scanner.nextLine()
+        val domainName = scanner.nextLine().toLowerCase()
 
         println("Enter the ip address of the dns server you wanna connect to")
         val ipText = scanner.nextLine()
 
         println("Enter the port of dns server or leave empty for default (53)")
-        var portText = scanner.nextLine()
-        if (portText.isBlank()) portText = "53"
+        var port = PORT
+        val portText = scanner.nextLine()
         if (ipText.isBlank() || domainName.isBlank()) {
             println("One of the field was empty.")
             exitProcess(1)
         }
 
-        val port = try { portText.toInt() }
+        try { port = portText.toInt() }
         catch (ex: NumberFormatException) {
-            println("enter the correct port next time")
-            exitProcess(1)
+            println("Incorrect port format. Used default port: $port")
         }
         send(ipText, port, domainName, type)
     }
@@ -53,7 +51,7 @@ class Client {
             exitProcess(1)
         }
 
-        val reqId = Random.nextInt(Short.MAX_VALUE + 1).toShort()
+        val reqId = rndShort()
 
         val header = Header(id = reqId)
         val question = Question(qname = domainName, qtype = type, qclass = RecordClass.of(1))

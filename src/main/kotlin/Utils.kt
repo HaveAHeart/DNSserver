@@ -1,13 +1,17 @@
 import java.nio.ByteBuffer
+import kotlin.random.Random
 
 const val NOT_IMPL_MSG = "This record type is not supported."
+const val RECORD_FILE_PATH = "src/main/NameLists/"
 const val MAX_PACKET_SIZE = 512
 const val SPACE_CHARACTER = " "
 const val COLON_CHARACTER = ":"
 const val DOT_CHARACTER = "."
 const val HEADER_SIZE = 12
-const val PORT = 5000
+const val PORT = 53
 const val ZERO = "0"
+
+fun rndShort(): Short = Random.nextInt(Short.MAX_VALUE + 1).toShort()
 
 fun getBoolFromBit(char: Char): Boolean = char == '1'
 
