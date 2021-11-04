@@ -7,7 +7,6 @@ import byteSubsequence
 import byteToHex
 import byteToInt
 import bytesToName
-import exceptions.NotImplTypeException
 import nameToBytes
 import shortToByteArray
 
@@ -43,7 +42,7 @@ data class Resource(var name: String = String(), var type: RecordType = RecordTy
                         rData += inData[i + j].toChar()
 
                 is RecordType.MX -> rData += bytesToName(i + 2, inData).first
-                is RecordType.NotImpl -> throw NotImplTypeException(NOT_IMPL_MSG)
+                is RecordType.NotImpl -> println(NOT_IMPL_MSG)
             }
             val resource = Resource(rName, rType, RecordClass.of(rClass), rTtl, rdLength.toShort(), rData)
             return Pair(resource, i + rdLength)
@@ -76,7 +75,7 @@ data class Resource(var name: String = String(), var type: RecordType = RecordTy
                 }
             }
             is RecordType.TXT -> res = rdata.toByteArray(Charsets.US_ASCII)
-            is RecordType.NotImpl -> throw NotImplTypeException(NOT_IMPL_MSG)
+            is RecordType.NotImpl -> println(NOT_IMPL_MSG)
         }
         return res
     }

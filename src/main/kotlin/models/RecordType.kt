@@ -3,12 +3,12 @@ package models
 import NOT_IMPL_MSG
 import exceptions.NotImplTypeException
 
-sealed class RecordType(val code: Short) {
-    class A : RecordType(1)
-    class AAAA : RecordType(28)
-    class NotImpl(type: Short) : RecordType(type)
-    data class MX(val size: Int): RecordType(15)
-    data class TXT(val size: Int): RecordType(16)
+sealed class RecordType(val code: Short, private val str: String) {
+    class A : RecordType(1, "A")
+    class AAAA : RecordType(28, "AAAA")
+    class NotImpl(type: Short) : RecordType(type, "NotImpl")
+    data class MX(val size: Int): RecordType(15, "MX")
+    data class TXT(val size: Int): RecordType(16, "TXT")
 
     companion object {
         fun of(code: Short): RecordType = when (code.toInt()) {
@@ -27,5 +27,8 @@ sealed class RecordType(val code: Short) {
             is TXT -> this.size
             is NotImpl -> throw NotImplTypeException(NOT_IMPL_MSG)
     }
+
+    override fun toString(): String = str
+
 }
 
