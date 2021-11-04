@@ -52,10 +52,6 @@ data class Resource(var name: String = String(), var type: RecordType = RecordTy
 
     fun rDataToByteArray(type: RecordType, rdata: String, rLength: Short): ByteArray {
         var res = ByteArray(rLength.toInt())
-        println("-------")
-        println(rdata)
-        println(rLength)
-        println("-------")
         when (type) {
             is RecordType.A -> rdata.split(DOT_CHARACTER).forEachIndexed{i, byteStr ->
                     res[i] = byteStr.toUByte().toByte()

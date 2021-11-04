@@ -78,17 +78,17 @@ class Client {
                 println("answers = $res")
                 println("anCount = ${retDNSMessage.header.ancount}")
                 for (j in 0 until retDNSMessage.header.ancount) {
-                    println("${retDNSMessage.resList[i].name} : ${retDNSMessage.resList[i].rdata}")
+                    println("\t${retDNSMessage.resList[i].name} : ${retDNSMessage.resList[i].rdata}")
                     i++
                 }
                 println("nsCount = ${retDNSMessage.header.nscount}")
                 for (j in 0 until retDNSMessage.header.nscount) {
-                    println("${retDNSMessage.resList[i].name} : ${retDNSMessage.resList[i].rdata}")
+                    println("\t${retDNSMessage.resList[i].name} : ${retDNSMessage.resList[i].rdata}")
                     i++
                 }
                 println("arCount = ${retDNSMessage.header.arcount}")
                 for (j in 0 until retDNSMessage.header.arcount) {
-                    println("${retDNSMessage.resList[i].name} : ${retDNSMessage.resList[i].rdata}")
+                    println("\t${retDNSMessage.resList[i].name} : ${retDNSMessage.resList[i].rdata}")
                     i++
                 }
             }
