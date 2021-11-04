@@ -1,7 +1,4 @@
-import models.DNSMessage
-import models.Header
-import models.Question
-import models.RecordType
+import models.*
 import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.InetSocketAddress
@@ -59,7 +56,7 @@ class Client {
         val reqId = Random.nextInt(Short.MAX_VALUE + 1).toShort()
 
         val header = Header(id = reqId)
-        val question = Question(qname = domainName, qtype = type, qclass = 1)
+        val question = Question(qname = domainName, qtype = type, qclass = RecordClass.of(1))
         val dnsMsg = DNSMessage(header, question, listOf())
 
         val sendData = dnsMsg.toByteArray()
@@ -69,15 +66,33 @@ class Client {
             val packet = DatagramPacket(sendData, sendData.size, addr.address, addr.port)
             datagramSocket.send(packet)
 
-            val receiveBuf = ByteArray(512)
+            val receiveBuf = ByteArray(MAX_PACKET_SIZE)
             val response = DatagramPacket(receiveBuf, receiveBuf.size)
             datagramSocket.receive(response)
 
             val data = response.data
             val retDNSMessage = DNSMessage.parseByteArray(data)
-            for (res in retDNSMessage.resList) {
-                println("${res.name} : ${res.rdata}")
+            if (retDNSMessage.resList.isNotEmpty()) {
+                var i = 0
+                val res = retDNSMessage.resList.size
+                println("answers = $res")
+                println("anCount = ${retDNSMessage.header.ancount}")
+                for (j in 0 until retDNSMessage.header.ancount) {
+                    println("${retDNSMessage.resList[i].name} : ${retDNSMessage.resList[i].rdata}")
+                    i++
+                }
+                println("nsCount = ${retDNSMessage.header.nscount}")
+                for (j in 0 until retDNSMessage.header.nscount) {
+                    println("${retDNSMessage.resList[i].name} : ${retDNSMessage.resList[i].rdata}")
+                    i++
+                }
+                println("arCount = ${retDNSMessage.header.arcount}")
+                for (j in 0 until retDNSMessage.header.arcount) {
+                    println("${retDNSMessage.resList[i].name} : ${retDNSMessage.resList[i].rdata}")
+                    i++
+                }
             }
+            else println("No results")
         }
     }
 }

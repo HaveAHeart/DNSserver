@@ -20,8 +20,6 @@ class DNSMessage(var header: Header, var question: Question, var resList: List<R
             return DNSMessage(header, question, resources)
         }
 
-
-
         private fun getResourcesFromByteArray(inData: ByteArray, index: Int, resAmount: Int): List<Resource> {
             val resList = mutableListOf<Resource>()
             var i = index
@@ -49,11 +47,11 @@ class DNSMessage(var header: Header, var question: Question, var resList: List<R
         dos.writeShort(header.arcount.toInt())
         dos.write(nameToBytes(question.qname))
         dos.writeShort(question.qtype.code.toInt())
-        dos.writeShort(question.qclass.toInt())
+        dos.writeShort(question.qclass.code.toInt())
         for (resource in resList) {
             dos.write(nameToBytes(resource.name))
             dos.writeShort(resource.type.code.toInt())
-            dos.writeShort(resource.rclass.toInt())
+            dos.writeShort(resource.rclass.code.toInt())
             dos.writeInt(resource.ttl)
             dos.writeShort(resource.rdlength.toInt())
             dos.write(Resource().rDataToByteArray(resource.type, resource.rdata, resource.rdlength))
@@ -64,6 +62,4 @@ class DNSMessage(var header: Header, var question: Question, var resList: List<R
     override fun toString(): String {
         return "DNSMessage(header=$header, question=$question, resList=$resList)"
     }
-
-
 }

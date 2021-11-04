@@ -1,3 +1,3 @@
 package exceptions
 
-class NotImplTypeException(message: String) : NotImplException(message)
+class NotImplTypeException(message: String) : DnsException(message)
