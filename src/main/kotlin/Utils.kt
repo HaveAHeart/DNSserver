@@ -6,7 +6,7 @@ const val SPACE_CHARACTER = " "
 const val COLON_CHARACTER = ":"
 const val DOT_CHARACTER = "."
 const val HEADER_SIZE = 12
-const val PORT = 53
+const val PORT = 5000
 const val ZERO = "0"
 
 fun getBoolFromBit(char: Char): Boolean = char == '1'
@@ -75,6 +75,7 @@ fun bytesToName(initPointer: Int, inData: ByteArray): Pair<String, Int> {
         }
         readAmount = currByte.toInt()
         i++
+        if (readAmount == 0) break
         for (j in 0 until readAmount) {
             name += inData[i].toChar()
             i++

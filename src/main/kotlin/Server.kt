@@ -1,7 +1,4 @@
-import models.DNSMessage
-import models.RecordType
-import models.Resource
-import models.ResponseCode
+import models.*
 import java.io.File
 import java.net.DatagramPacket
 import java.net.DatagramSocket
@@ -29,35 +26,14 @@ class Server {
             dnsMsg.header.flags.qr = true //sending an answer
             val type = dnsMsg.question.qtype
             val qName = dnsMsg.question.qname
+            val clazz = dnsMsg.question.qclass
+            val ttl = 60
 
-            val resMap: LinkedHashMap<String, RecordType> = when (type) {
-                is RecordType.A -> getInfo(qName, "src/main/NameLists/A.txt", RecordType.of(1))
-                is RecordType.MX -> getInfo(qName, "src/main/NameLists/MX.txt", RecordType.of(15))
-                is RecordType.TXT -> getInfo(qName, "src/main/NameLists/TXT.txt", RecordType.of(16))
-                is RecordType.AAAA -> getInfo(qName, "src/main/NameLists/AAAA.txt", RecordType.of(28))
-                is RecordType.NotImpl -> { LinkedHashMap() }
-            }
-            for (mutableEntry in resMap) {
-                println("${mutableEntry.key}-->${mutableEntry.value}")
-            }
-            val resources = mutableListOf<Resource>()
-            if (resMap.isNotEmpty() && checkHeader(dnsMsg)) {
-                dnsMsg.header.ancount = countResources(resMap, type).toShort()
-                dnsMsg.header.arcount = (resMap.size - dnsMsg.header.ancount).toShort()
-                val clazz = dnsMsg.question.qclass
-                val ttl = 60
-                resMap.forEach { resource ->
-                    val name = dnsMsg.question.qname
-                    val rType = resource.value
-                    val rdLength: Int = when(rType) {
-                        is RecordType.A -> RecordType.A().size()
-                        is RecordType.MX -> (resource.key.split(COLON_CHARACTER).last()).length + 4
-                        is RecordType.AAAA -> RecordType.AAAA().size()
-                        is RecordType.TXT -> resource.key.length
-                        is RecordType.NotImpl -> throw exceptions.NotImplTypeException(NOT_IMPL_MSG)
-                    }
-                    resources.add(Resource(name, rType, clazz, ttl, rdLength.toShort(), resource.key))
-                }
+            val resources = getResource(qName, type, clazz, ttl)
+
+            if (resources.isNotEmpty() && checkHeader(dnsMsg)) {
+                dnsMsg.header.ancount = countResources(resources, type).toShort()
+                dnsMsg.header.arcount = (resources.size - dnsMsg.header.ancount).toShort()
             }
             else errorFunc(dnsMsg, 3)
 
@@ -70,35 +46,62 @@ class Server {
         }
     }
 
-    private fun countResources(resMap: LinkedHashMap<String, RecordType>, type: RecordType): Int {
+    private fun countResources(res: List<Resource>, type: RecordType): Int {
         var count = 0
-        for (mutableEntry in resMap) {
-            if (mutableEntry.value == type)
+        for (entry in res) {
+            if (entry.type == type)
                 count++
         }
         return count
     }
 
-    private fun getInfo(field: String, filePath: String, rType: RecordType): LinkedHashMap<String, RecordType>  {
+    private fun getResource(name: String, rType: RecordType, rClass: RecordClass, ttl: Int): List<Resource>  {
+        val filePath = when (rType) {
+            is RecordType.A -> "src/main/NameLists/A.txt"
+            is RecordType.MX -> "src/main/NameLists/MX.txt"
+            is RecordType.TXT -> "src/main/NameLists/TXT.txt"
+            is RecordType.AAAA -> "src/main/NameLists/AAAA.txt"
+            is RecordType.NotImpl -> ""
+        }
+        //types: 1 15 16 28
+        //resource: name type rClass=1 ttl rdlength rdata
         val file = File(filePath)
         val res = LinkedHashMap<String, RecordType>()
-        val result = LinkedHashMap<String, RecordType>()
+        val result = mutableListOf<Resource>()
         for (line in file.readLines()) {
             val address = line.split(SPACE_CHARACTER.toRegex(), 2)
-            if (address[0] == field) {
+            if (address[0] == name) {
                 res[address[1]] = rType
             }
         }
-        result.putAll(res)
-        if (rType == RecordType.of(15)) {
-            for (resources in res) {
-                val parsedRes = resources.key.split(COLON_CHARACTER).last()
-                val aResources = getInfo(parsedRes, "src/main/NameLists/A.txt", RecordType.of(1))
-                val aaaaResources = getInfo(parsedRes, "src/main/NameLists/AAAA.txt", RecordType.of(28))
-                result.putAll(aResources)
-                result.putAll(aaaaResources)
+        for (entry in res) {
+            val rdLength: Int = when(rType) {
+                is RecordType.A -> RecordType.A().size()
+                is RecordType.MX -> (entry.key.split(COLON_CHARACTER).last()).length + 4
+                is RecordType.AAAA -> RecordType.AAAA().size()
+                is RecordType.TXT -> entry.key.length
+                is RecordType.NotImpl -> throw exceptions.NotImplTypeException(NOT_IMPL_MSG)
+            }
+            result.add(Resource(name, rType, rClass, ttl, rdLength.toShort(), entry.key))
+        }
+        for (localRes in result) println(localRes.toString())
+        //result : aaa.a xxx.xxx.xxx.xxx
+        val additionalRes = mutableListOf<Resource>()
+        for (resource in result) {
+            if (resource.type == RecordType.of(15)) {
+                val resName = resource.rdata.split(COLON_CHARACTER).last()
+                println("looking for A for $resName")
+                val resA = getResource(resName, RecordType.of(1), rClass, ttl)
+                println("looking for AAAA for $resName")
+                val resAAAA = getResource(resName, RecordType.of(28), rClass, ttl)
+                additionalRes.addAll(resA)
+                additionalRes.addAll(resAAAA)
             }
         }
+        result.addAll(additionalRes)
+
+        for (re in result) println(re.toString())
+
         return result
     }
 
