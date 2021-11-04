@@ -1,7 +1,4 @@
-import models.DNSMessage
-import models.Header
-import models.Question
-import models.RecordType
+import models.*
 import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.InetSocketAddress
@@ -59,7 +56,7 @@ class Client {
         val reqId = Random.nextInt(Short.MAX_VALUE + 1).toShort()
 
         val header = Header(id = reqId)
-        val question = Question(qname = domainName, qtype = type, qclass = 1)
+        val question = Question(qname = domainName, qtype = type, qclass = RecordClass.of(1))
         val dnsMsg = DNSMessage(header, question, listOf())
 
         val sendData = dnsMsg.toByteArray()
@@ -75,9 +72,11 @@ class Client {
 
             val data = response.data
             val retDNSMessage = DNSMessage.parseByteArray(data)
-            for (res in retDNSMessage.resList) {
-                println("${res.name} : ${res.rdata}")
-            }
+            if (retDNSMessage.resList.isNotEmpty())
+                for (res in retDNSMessage.resList)
+                    println("${res.name} : ${res.rdata}")
+            else println("No results")
+
         }
     }
 }

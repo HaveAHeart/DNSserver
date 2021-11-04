@@ -1,5 +1,6 @@
 package models
 
+import NOT_IMPL_MSG
 import exceptions.NotImplTypeException
 
 sealed class RecordType(val code: Short) {
@@ -24,7 +25,7 @@ sealed class RecordType(val code: Short) {
             is AAAA -> 16
             is MX -> this.size
             is TXT -> this.size
-            is NotImpl -> throw NotImplTypeException("This record type is not implemented")
+            is NotImpl -> throw NotImplTypeException(NOT_IMPL_MSG)
     }
 }
 

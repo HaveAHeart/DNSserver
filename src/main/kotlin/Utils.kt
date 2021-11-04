@@ -1,5 +1,6 @@
 import java.nio.ByteBuffer
 
+const val NOT_IMPL_MSG = "This record type is not supported."
 const val SPACE_CHARACTER = " "
 const val COLON_CHARACTER = ":"
 const val DOT_CHARACTER = "."
@@ -10,16 +11,16 @@ fun getBoolFromBit(char: Char): Boolean = char == '1'
 
 fun getBitsFromShort(inShort: Short): String {
     val strBytes = shortToString(inShort)
-    return strBytes.substring(strBytes.length - 4, strBytes.length)
+    return shortToString(inShort).substring(strBytes.length - 4, strBytes.length)
 }
 
-fun shortToString(inShort: Short): String {
-    return String.format("%" + 16 + "s", inShort.toString(radix = 2)).replace(SPACE_CHARACTER.toRegex(), ZERO)
-}
+fun shortToString(inShort: Short): String =
+    String.format("%" + 16 + "s", inShort.toString(radix = 2)).replace(SPACE_CHARACTER.toRegex(), ZERO)
 
-fun byteToString(inByte: Byte): String {
-    return String.format("%" + 8 + "s", inByte.toUByte().toString(radix = 2)).replace(SPACE_CHARACTER.toRegex(), ZERO)
-}
+fun byteToString(inByte: Byte): String =
+    String.format("%" + 8 + "s", inByte.toUByte().toString(radix = 2)).replace(SPACE_CHARACTER.toRegex(), ZERO)
+
+fun getBit(value: Int, position: Int): Int = (value shr position) and 1
 
 fun byteToInt(inByte: Byte): Int = inByte.toInt() and 0xff
 
@@ -35,14 +36,14 @@ fun byteSubsequence(array: ByteArray, start: Int, end : Int): ByteBuffer =
     ByteBuffer.wrap(array.copyOfRange(start, end))
 
 fun nameToBytes(inName: String): ByteArray {
-    //my.domain.at.com -> my domain at com -> 2 M Y 6 D O M models.A I N 2 models.A T 3 C O M 0
+    //my.domain.at.com -> my domain at com -> 2 M Y 6 D O M A I N 2 A T 3 C O M 0
     val parsedDomain = inName.split(DOT_CHARACTER)
     val qName = ByteArray(inName.length + 2)
     var byteIter = 0
-    parsedDomain.forEach { subDomain ->
+    for (subDomain in parsedDomain) {
         qName[byteIter] = subDomain.length.toByte()
         byteIter++
-        subDomain.forEach { letter ->
+        for (letter in subDomain) {
             qName[byteIter] = letter.toByte()
             byteIter++
         }
@@ -54,7 +55,7 @@ fun nameToBytes(inName: String): ByteArray {
 //2 M Y 6 D O M A I N 2 A T 3 C O M 0 -> my.domain.at.com
 //2 M Y 6 D O M A I N 2 A T 3 C O M 0 ...... 2 M X 11000000 00001100 (pointer to 12) -> mx.my.domain.at.com
 fun bytesToName(initPointer: Int, inData: ByteArray): Pair<String, Int> {
-    var name = ""
+    var name = String()
     var i = initPointer
     var end = 0
     var readAmount = -1
@@ -62,11 +63,10 @@ fun bytesToName(initPointer: Int, inData: ByteArray): Pair<String, Int> {
     while (readAmount != 0) {
         val currByte = inData[i]
         if (!pointerFound) {
-            val currByteStr = byteToString(currByte)
-            val isPointer = currByteStr[0] == '1' && currByteStr[1] == '1'
+            val isPointer = getBit(currByte.toInt(), 7) == 1 && getBit(currByte.toInt(), 6) == 1
             if (isPointer) {
                 end = i + 2
-                i = ("00" + currByteStr.substring(2, 7) + inData[i + 1].toString(radix = 2)).toInt(radix = 2)
+                i = ("00" + byteToString(currByte).substring(2, 7) + inData[i + 1].toString(radix = 2)).toInt(radix = 2)
                 pointerFound = true
                 continue
             }

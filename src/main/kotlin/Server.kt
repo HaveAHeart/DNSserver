@@ -31,8 +31,6 @@ class Server {
             val type = dnsMsg.question.qtype
             val qName = dnsMsg.question.qname
 
-            var isCorrect = checkHeader(dnsMsg)
-
             val res: List<String> = when (type) {
                 is RecordType.A -> getInfo(qName, "src/main/NameLists/A.txt")
                 is RecordType.MX -> getInfo(qName, "src/main/NameLists/MX.txt")
@@ -41,12 +39,8 @@ class Server {
                 is RecordType.NotImpl -> { listOf() }
             }
 
-            if (res.isEmpty()) {
-                errorFunc(dnsMsg, 3)
-                isCorrect = false
-            }
             val resources = mutableListOf<Resource>()
-            if (isCorrect) {
+            if (res.isNotEmpty() && checkHeader(dnsMsg)) {
                 dnsMsg.header.ancount = res.size.toShort() //TODO arcount
                 val name = dnsMsg.question.qname
                 val rType = dnsMsg.question.qtype
@@ -58,11 +52,13 @@ class Server {
                         is RecordType.MX -> (resource.split(COLON_CHARACTER).last()).length + 2
                         is RecordType.AAAA -> RecordType.AAAA().size()
                         is RecordType.TXT -> resource.length
-                        is RecordType.NotImpl -> throw exceptions.NotImplTypeException("This record type is not implemented")
+                        is RecordType.NotImpl -> throw exceptions.NotImplTypeException(NOT_IMPL_MSG)
                     }
                     resources.add(Resource(name, rType, clazz, ttl, rdLength.toShort(), resource))
                 }
             }
+            else errorFunc(dnsMsg, 3)
+
             dnsMsg.resList = resources
             val sentData = dnsMsg.toByteArray()
             val response = DatagramPacket(sentData, sentData.size, retAddress, retPort)
@@ -72,12 +68,12 @@ class Server {
         }
     }
 
-    private fun getInfo(field: String, filePath: String): List<String> {
-        return File(filePath).readLines()
+    private fun getInfo(field: String, filePath: String): List<String> =
+        File(filePath).readLines()
             .map { it.split(SPACE_CHARACTER.toRegex(), 2) }
             .filter { it[0] == field }
             .map { it[1] }
-    }
+
 
     private fun checkHeader(dnsMsg: DNSMessage): Boolean {
         val header = dnsMsg.header
