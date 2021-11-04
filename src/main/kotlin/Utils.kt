@@ -1,10 +1,12 @@
 import java.nio.ByteBuffer
 
 const val NOT_IMPL_MSG = "This record type is not supported."
+const val MAX_PACKET_SIZE = 512
 const val SPACE_CHARACTER = " "
 const val COLON_CHARACTER = ":"
 const val DOT_CHARACTER = "."
 const val HEADER_SIZE = 12
+const val PORT = 53
 const val ZERO = "0"
 
 fun getBoolFromBit(char: Char): Boolean = char == '1'
